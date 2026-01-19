@@ -1,6 +1,6 @@
 import json
 import pathlib
-from huggingface_hub import HfFileSystem, hf_hub_download
+from huggingface_hub import hf_hub_download
 import os
 import gzip
 from os.path import join as join_path
@@ -20,7 +20,6 @@ class RUAccent:
         self.accent_model = AccentModel()
         self.stress_usage_predictor = StressUsagePredictorModel()
         self.yo_homograph_model = YoHomographModel()
-        self.fs = HfFileSystem()
         self.normalize = re.compile(r"[^a-zA-Z0-9\sа-яА-ЯёЁ—.,!?:;""''(){}\[\]«»„“”-]")
         self.omograph_models_paths = {'big_poetry': '/nn/nn_omograph/big_poetry', 
                                       'medium_poetry': '/nn/nn_omograph/medium_poetry', 
@@ -64,7 +63,6 @@ class RUAccent:
             join_path(self.workdir, "dictionary")
         ):
             for path in self.accentuator_paths:
-                files = self.fs.ls(repo + path)
                 for file in files:
                     if file["type"] == "file":
                         hf_hub_download(repo_id=repo, local_dir_use_symlinks=False, local_dir=self.workdir, filename=file['name'].replace(repo+'/', ''))
@@ -75,13 +73,11 @@ class RUAccent:
         if not os.path.exists(join_path(self.workdir, "nn", "nn_omograph", omograph_model_size)):
             model_path = self.omograph_models_paths.get(omograph_model_size, None)
             if model_path:
-                files = self.fs.ls(repo + model_path)
                 for file in files:
                     if file["type"] == "file":
                         hf_hub_download(repo_id=repo, local_dir_use_symlinks=False, local_dir=self.workdir, filename=file['name'].replace(repo+'/', ''))
         if not os.path.exists(join_path(self.module_path, "koziev")):
           for path in self.koziev_paths:
-               files = self.fs.ls(repo + path)
                for file in files:
                    if file["type"] == "file":
                        hf_hub_download(repo_id=repo, local_dir_use_symlinks=False, local_dir=self.module_path, filename=file['name'].replace(repo+'/', ''))
