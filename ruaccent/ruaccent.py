@@ -121,7 +121,8 @@ class RUAccent:
             self.rule_accent = RuleEngine()
 
             self.stress_usage_predictor.load(join_path(self.workdir, "nn","nn_stress_usage_predictor/"), device=device)
-            self.rule_accent.load(join_path(self.workdir, "dictionary","rule_engine"))
+            kozievdir = join_path(self.workdir, "koziev") if workdir is not None else None
+            self.rule_accent.load(join_path(self.workdir, "dictionary", "rule_engine"), workdir=kozievdir)
 
 
     def count_vowels(self, text):

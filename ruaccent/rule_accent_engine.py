@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import gzip
 from os.path import join as join_path
@@ -15,15 +16,16 @@ class RuleEngine:
         self.wordforms = {}
         self.forms_dict = {}
 
-    def load(self, path):
+    def load(self, path, workdir):
         with open(file=join_path(path, "accents.json"), mode='r', encoding="utf-8") as f:
             self.wordforms = json.load(f)
         with open(file=join_path(path, "forms.json"), mode='r', encoding="utf-8") as f:
             self.forms_dict = json.load(f)
         self.lemmatizer = Lemmatizer()
-        self.lemmatizer.load()
+        self.lemmatizer.load(workdir=os.path.join(workdir, "rulemma") if workdir else None)
         self.tagger = RuPosTagger()
-        self.tagger.load()
+        self.tagger.load(workdir=os.path.join(workdir, "rupostagger") if workdir else None)
+
     def split_by_words(self, string):
         string = string.replace(" - ",' ~ ')
         result = re.findall(r"\w*(?:\+\w+)*|[^\w\s]+", string.lower())
