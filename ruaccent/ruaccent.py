@@ -35,11 +35,12 @@ class RUAccent:
 
                                       }
     
-        self.accentuator_paths = ['/nn/nn_accent', '/nn/nn_stress_usage_predictor','/nn/nn_yo_homograph_resolver', '/dictionary', '/dictionary/rule_engine']
+        self.accentuator_paths = ['/nn/nn_accent', '/nn/nn_stress_usage_predictor', '/nn/nn_yo_homograph_resolver', '/dictionary', '/dictionary/rule_engine']
         self.letters_accent = {'о': '+о', 'О': '+О'}
         self.koziev_paths = ["/koziev/rulemma", "/koziev/rupostagger", "/koziev/rupostagger/database"]
         self.tiny_mode = False
-        
+        self.enable_stress_usage_predictor = not self.tiny_mode
+
     def load(
         self,
         omograph_model_size="turbo2",
@@ -49,8 +50,10 @@ class RUAccent:
         device="CPU",
         repo="ruaccent/accentuator",
         workdir=None,
-        tiny_mode=False
-        ):
+        enable_stress_usage_predictor=True,
+        tiny_mode=False,
+    ):
+        self.enable_stress_usage_predictor = enable_stress_usage_predictor
         self.tiny_mode = tiny_mode
         if workdir:
             self.workdir = workdir
@@ -115,14 +118,15 @@ class RUAccent:
         self.accents.update(self.custom_dict)
         self.accents.update(self.letters_accent)
 
-
         if not self.tiny_mode:
             from .rule_accent_engine import RuleEngine
             self.rule_accent = RuleEngine()
 
-            self.stress_usage_predictor.load(join_path(self.workdir, "nn","nn_stress_usage_predictor/"), device=device)
             kozievdir = join_path(self.workdir, "koziev") if workdir is not None else None
             self.rule_accent.load(join_path(self.workdir, "dictionary", "rule_engine"), workdir=kozievdir)
+        
+        if self.enable_stress_usage_predictor:
+            self.stress_usage_predictor.load(join_path(self.workdir, "nn","nn_stress_usage_predictor/"), device=device)
 
 
     def count_vowels(self, text):
@@ -241,7 +245,11 @@ class RUAccent:
             if len(words) == 0:
                 outputs.append("".join(remaining_text))
                 continue
-            stress_usages = self.extract_entities(self.stress_usage_predictor.predict_stress_usage(sentence)) if not self.tiny_mode else ["STRESS"] * len(text)            
+            stress_usages = (
+                self.extract_entities(self.stress_usage_predictor.predict_stress_usage(sentence))
+                if self.enable_stress_usage_predictor else
+                ["STRESS"] * len(text)
+            )
             processed_words = self._process_yo(words, sentence)
             processed_words = self._process_omographs(processed_words)
             processed_words = self._process_accent(processed_words, stress_usages)
